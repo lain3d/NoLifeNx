@@ -30,14 +30,33 @@
 #  else
 #    include <Windows.h>
 #  endif // __MINGW32__
-#else
+#elif __linux__
 #  include <sys/types.h>
 #  include <sys/stat.h>
 #  include <sys/fcntl.h>
 #  include <sys/mman.h>
 #  include <unistd.h>
+#else
+#  include <sys/types.h>
+#  include <sys/stat.h>
+#  include <sys/fcntl.h>
 #endif
 #include <stdexcept>
+
+#ifdef __SWITCH__
+#include "mman.h"
+#endif
+
+#if !defined(HAVE_MMAN) || defined(_WIN32)
+#define PROT_READ 0x1
+#define MAP_SHARED 0x1
+
+/*void* mmap(void *addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off);
+
+int munmap(void *addr, size_t len);
+
+int mprotect(void *addr, size_t len, int prot);*/
+#endif
 
 namespace nl {
     file::file(std::string name) {
