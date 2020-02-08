@@ -239,9 +239,14 @@ namespace nl {
     std::string node::name() const {
         if (!m_data)
             return {};
-        auto const s = reinterpret_cast<char const *>(m_file->base)
-            + m_file->string_table[m_data->name];
-        return {s + 2, *reinterpret_cast<uint16_t const *>(s)};
+
+        auto const s = m_file->string_table[m_data->name];
+        ::fseek(m_file->file_handle, s, SEEK_SET);
+        char* buffer = (char*) malloc(100);
+        ::fread(buffer, 100, 1, m_file->file_handle);
+        //fscanf(m_file->file_handle, "%s", buffer);
+
+        return {buffer + 2, *reinterpret_cast<uint16_t const *>(buffer)};
     }
     size_t node::size() const {
         return m_data ? m_data->num : 0u;
@@ -254,16 +259,28 @@ namespace nl {
             return {nullptr, m_file};
         auto p = m_file->node_table + m_data->children;
         auto n = m_data->num;
-        auto const b = reinterpret_cast<const char *>(m_file->base);
+        //auto const b = reinterpret_cast<const char *>(m_file->base);
         auto const t = m_file->string_table;
         for (;;) {
             if (!n)
                 return {nullptr, m_file};
             auto const n2 = static_cast<decltype(n)>(n >> 1);
             auto const p2 = p + n2;
-            auto const sl = b + t[p2->name];
-            auto const l1 = *reinterpret_cast<uint16_t const *>(sl);
-            auto const s = reinterpret_cast<uint8_t const *>(sl + 2);
+            auto const sl = t[p2->name]; //b + t[p2->name];  in this case it would be num bytes offset from beg of file
+
+            ::fseek(m_file->file_handle, sl, SEEK_SET);
+            char buffer[100];
+            memset(buffer, 1, sizeof(buffer));
+            /*fscanf(m_file->file_handle, "%s", buffer);
+            if (!buffer[0]) {
+                long newpos = sl - 1;
+                ::fseek(m_file->file_handle, newpos, SEEK_SET);
+                memset(buffer, 1, sizeof(buffer));
+                fscanf(m_file->file_handle, "%s%s", buffer,buffer+1);
+            }*/
+            ::fread(buffer, 100, 1, m_file->file_handle);
+            auto const l1 =  *reinterpret_cast<uint16_t const *>(buffer); //*reinterpret_cast<uint16_t const *>(sl);
+            auto const s = buffer/*sl*/ + 2;
             auto const os = reinterpret_cast<uint8_t const *>(o);
             bool z = false;
             auto const len = l1 < l ? l1 : l;
@@ -296,25 +313,71 @@ namespace nl {
         return m_data->dreal;
     }
     std::string node::to_string() const {
-        auto const s = reinterpret_cast<char const *>(m_file->base)
-            + m_file->string_table[m_data->string];
-        return {s + 2, *reinterpret_cast<uint16_t const *>(s)};
+
+        //auto const s = reinterpret_cast<char const *>(m_file->base)
+        //    + m_file->header->string_offset + m_data->string;
+
+        /*::fseek(m_file->file_handle, m_file->header->string_offset + m_data->string, SEEK_SET);
+        char ch = ::getc(m_file->file_handle);
+        int count = 0;
+        while ((ch != '\n') && (ch != EOF) && (ch != '\000')) {
+            ch = ::getc(m_file->file_handle);
+            count++;
+        }
+        char* t = (char*)malloc(sizeof(char) * count);
+        if (t == NULL) {
+            printf("failed to alloc");
+            exit(1);
+        }
+        ::fseek(m_file->file_handle, m_file->header->string_offset + m_data->string, SEEK_SET);
+        ::fread(t, sizeof(t), 1, m_file->file_handle);*/
+        //::sscanf(s, "%s", &t);
+        // not sure if m_data->string is a byte offset...
+            //+ m_file->string_table[m_data->string];
+
+        //char const* t = reinterpret_cast<char const *>(m_data->string);
+
+        //string table helps us find the memory offset in the file where our string lives....
+        auto const offset = m_file->string_table[m_data->string];
+        char buffer[100];
+        ::fseek(m_file->file_handle, offset, SEEK_SET);
+        ::fread(buffer, 100, 1, m_file->file_handle);
+        std::string x = std::string(buffer);
+        //return {t + 2, *reinterpret_cast<uint16_t const *>(t)};
+        return {buffer + 2, *reinterpret_cast<uint16_t const *>(buffer)};
     }
     vector2i node::to_vector() const {
         return {m_data->vector[0], m_data->vector[1]};
     }
     bitmap node::to_bitmap() const {
-        return {reinterpret_cast<char const *>(m_file->base)
-            + m_file->bitmap_table[m_data->bitmap.index],
-            m_data->bitmap.width, m_data->bitmap.height};
+        size_t bm_size = (4u * m_data->bitmap.width * m_data->bitmap.height);
+        //size_t bm_size = sizeof(nl::bitmap);
+        char* bm = (char*) malloc(bm_size);
+        //::fseek(m_file->file_handle, m_file->header->bitmap_offset + m_data->bitmap.index, SEEK_SET);
+        ::fseek(m_file->file_handle, m_file->bitmap_table[m_data->bitmap.index], SEEK_SET);
+        ::fread(bm, bm_size, 1, m_file->file_handle);
+
+        return {reinterpret_cast<const char*>(bm), m_data->bitmap.width, m_data->bitmap.height};
+
+        /*return {reinterpret_cast<char const *>(m_file->base)
+            + m_file->header->bitmap_offset + m_data->bitmap.index,
+            m_data->bitmap.width, m_data->bitmap.height};*/
     }
     audio node::to_audio() const {
-        return {reinterpret_cast<char const *>(m_file->base)
-            + m_file->audio_table[m_data->audio.index],
-            m_data->audio.length};
+        size_t au_size = (4u * m_data->bitmap.width * m_data->bitmap.height);
+        char* au = (char*) malloc(au_size);
+        ::fseek(m_file->file_handle, m_file->header->audio_offset + m_data->audio.index, SEEK_SET);
+        ::fread(au, sizeof(au), 1, m_file->file_handle);
+
+        return {reinterpret_cast<const char*>(au), m_data->audio.length};
+
+        /*return {reinterpret_cast<char const *>(m_file->base)
+            + m_file->header->audio_offset + m_data->audio.index,
+            m_data->audio.length};*/
     }
     node node::root() const {
-        return {m_file->node_table, m_file};
+        //return {reinterpret_cast<char const *>(m_file->base) + m_file->header->node_offset, m_file};
+        return {m_file->node_table, m_file}; // this should be fine...
     }
     node node::resolve(std::string path) const {
         std::istringstream stream(path);

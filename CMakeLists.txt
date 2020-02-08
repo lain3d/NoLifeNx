@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 project(NoLifeNx CXX)
+set(CMAKE_BUILD_TYPE Debug)
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     add_compile_options(-std=c++11)
 endif()

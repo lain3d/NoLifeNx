@@ -22,6 +22,12 @@
 #include <cstdint>
 #include <cstddef>
 
+#  include <sys/types.h>
+#  include <sys/stat.h>
+#  include <sys/fcntl.h>
+#  include <sys/mman.h>
+#  include <unistd.h>
+
 namespace nl {
     struct _file_data;
     typedef std::pair<int32_t, int32_t> vector2i;
@@ -46,7 +52,7 @@ namespace nl {
         //Constructors
         node() = default;
         node(node const &);//Only reason this isn't defaulted is because msvc has issues
-        node & operator=(node const &) = default;
+        //node & operator=(node const &) = default;
         //These methods are primarily so nodes can be used as iterators and iterated over
         node begin() const;
         node end() const;

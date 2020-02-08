@@ -36,6 +36,7 @@
 #  include <sys/fcntl.h>
 #  include <sys/mman.h>
 #  include <unistd.h>
+#  include <stdio.h>
 #endif
 #include <stdexcept>
 
@@ -81,24 +82,63 @@ namespace nl {
         if (!m_data->base)
             throw std::runtime_error("Failed to map view of file " + name);
 #else
-        m_data->file_handle = ::open(name.c_str(), O_RDONLY);
-        if (m_data->file_handle == -1)
+        //m_data->file_handle = ::open(name.c_str(), O_RDONLY);
+        m_data->file_handle = ::fopen(name.c_str(), "r");
+        if (m_data->file_handle == NULL)
             throw std::runtime_error("Failed to open file " + name);
         struct stat finfo;
-        if (::fstat(m_data->file_handle, &finfo) == -1)
-            throw std::runtime_error("Failed to obtain file information of file " + name);
+        int fd = ::fileno(m_data->file_handle);
+        if (::fstat(fd, &finfo) == -1)
+            printf("woops");
+        //    throw std::runtime_error("Failed to obtain file information of file " + name);
         m_data->size = finfo.st_size;
-        m_data->base = ::mmap(nullptr, m_data->size, PROT_READ, MAP_SHARED, m_data->file_handle, 0);
-        if (reinterpret_cast<intptr_t>(m_data->base) == -1)
-            throw std::runtime_error("Failed to create memory mapping of file " + name);
+        //m_data->base = ::mmap(nullptr, m_data->size, PROT_READ, MAP_SHARED, m_data->file_handle, 0);
+        //m_data->base = ::fread(a, m_data->size)
+        //if (reinterpret_cast<intptr_t>(m_data->base) == -1)
+        //    throw std::runtime_error("Failed to create memory mapping of file " + name);
 #endif
-        m_data->header = reinterpret_cast<header const *>(m_data->base);
+        m_data->header = (header*) malloc(sizeof(header));
+        fread((void*) (m_data->header), sizeof(header), 1, m_data->file_handle);
         if (m_data->header->magic != 0x34474B50)
             throw std::runtime_error(name + " is not a PKG4 NX file");
+        //m_data->node_table = reinterpret_cast<node::data const *>(reinterpret_cast<char const *>(m_data->base) + m_data->header->node_offset);
+
+        // seek to offset where nodes live
+        ::fseek(m_data->file_handle, m_data->header->node_offset, SEEK_SET);
+
+        size_t node_size = sizeof(node::data);
+        // allocate memory for nodes
+        m_data->node_table = (node::data*) (malloc(node_size * m_data->header->node_count));
+
+        //node::data nodes[m_data->header->node_count];
+
+        // read in node data
+        ::fread((void*)m_data->node_table, sizeof(node::data), m_data->header->node_count, m_data->file_handle);
+
+        //nodes = m_data->node_table;
+
+        /* load string table */
+        // seek to offset where nodes live
+        ::fseek(m_data->file_handle, m_data->header->string_offset, SEEK_SET);
+
+        // allocate memory for nodes
+        m_data->string_table = (uint64_t*) (malloc(sizeof(uint64_t*) * m_data->header->string_count));
+
+        // read in node data
+        ::fread((uint64_t*)m_data->string_table, sizeof(uint64_t*), m_data->header->string_count, m_data->file_handle);
+
+        // read in bitmap data
+        m_data->bitmap_table = (uint64_t*) (malloc(sizeof(uint64_t*) * m_data->header->bitmap_count));
+        ::fseek(m_data->file_handle, m_data->header->bitmap_offset, SEEK_SET);
+        ::fread((uint64_t*)m_data->bitmap_table, sizeof(uint64_t*), m_data->header->bitmap_count, m_data->file_handle);
+
+        //memcpy(nodes, m_data->string_table, sizeof(m_data->string_table));
+        /*
         m_data->node_table = reinterpret_cast<node::data const *>(reinterpret_cast<char const *>(m_data->base) + m_data->header->node_offset);
         m_data->string_table = reinterpret_cast<uint64_t const *>(reinterpret_cast<char const *>(m_data->base) + m_data->header->string_offset);
         m_data->bitmap_table = reinterpret_cast<uint64_t const *>(reinterpret_cast<char const *>(m_data->base) + m_data->header->bitmap_offset);
         m_data->audio_table = reinterpret_cast<uint64_t const *>(reinterpret_cast<char const *>(m_data->base) + m_data->header->audio_offset);
+        */
     }
     void file::close() {
         if (!m_data) return;
@@ -107,8 +147,8 @@ namespace nl {
         ::CloseHandle(m_data->map);
         ::CloseHandle(m_data->file_handle);
 #else
-        ::munmap(const_cast<void *>(m_data->base), m_data->size);
-        ::close(m_data->file_handle);
+        //::munmap(const_cast<void *>(m_data->base), m_data->size);
+        ::fclose(m_data->file_handle);
 #endif
         delete m_data;
         m_data = nullptr;
