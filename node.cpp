@@ -354,8 +354,11 @@ namespace nl {
         //size_t bm_size = sizeof(nl::bitmap);
         char* bm = (char*) malloc(bm_size);
         //::fseek(m_file->file_handle, m_file->header->bitmap_offset + m_data->bitmap.index, SEEK_SET);
+        //printf("seeking\n");
         ::fseek(m_file->file_handle, m_file->bitmap_table[m_data->bitmap.index], SEEK_SET);
-        ::fread(bm, bm_size, 1, m_file->file_handle);
+        //printf("reading index %d\n", m_data->bitmap.index);
+        ::fread(bm, 1, bm_size, m_file->file_handle);
+        //printf("finish reading\n");
 
         return {reinterpret_cast<const char*>(bm), m_data->bitmap.width, m_data->bitmap.height};
 
@@ -364,10 +367,11 @@ namespace nl {
             m_data->bitmap.width, m_data->bitmap.height};*/
     }
     audio node::to_audio() const {
-        size_t au_size = (4u * m_data->bitmap.width * m_data->bitmap.height);
+        //size_t au_size = (4u * m_data->bitmap.width * m_data->bitmap.height);
+        size_t au_size = m_data->audio.length;
         char* au = (char*) malloc(au_size);
-        ::fseek(m_file->file_handle, m_file->header->audio_offset + m_data->audio.index, SEEK_SET);
-        ::fread(au, sizeof(au), 1, m_file->file_handle);
+        ::fseek(m_file->file_handle, m_file->audio_table[m_data->audio.index], SEEK_SET); //m_file->header->audio_offset + m_data->audio.index, SEEK_SET);
+        ::fread(au, au_size, 1, m_file->file_handle);
 
         return {reinterpret_cast<const char*>(au), m_data->audio.length};
 

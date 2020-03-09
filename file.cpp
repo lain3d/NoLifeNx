@@ -87,9 +87,12 @@ namespace nl {
             throw std::runtime_error("Failed to map view of file " + name);
 #else
         //m_data->file_handle = ::open(name.c_str(), O_RDONLY);
+        printf("[*] opening file handle for %s\n", name.c_str());
         m_data->file_handle = ::fopen(name.c_str(), "r");
-        if (m_data->file_handle == NULL)
+        if (m_data->file_handle == NULL) {
+            printf("[!] failed to open file.\n");
             throw std::runtime_error("Failed to open file " + name);
+        }
         struct stat finfo;
         //int fd = ::fileno(m_data->file_handle);
         //if (::fstat(fd, &finfo) == -1)
@@ -101,17 +104,24 @@ namespace nl {
         //if (reinterpret_cast<intptr_t>(m_data->base) == -1)
         //    throw std::runtime_error("Failed to create memory mapping of file " + name);
 #endif
+        //printf("[*] header creation\n");
         m_data->header = (header*) malloc(sizeof(header));
+        //printf("[*] header: reading from file\n");
         fread((void*) (m_data->header), sizeof(header), 1, m_data->file_handle);
-        if (m_data->header->magic != 0x34474B50)
+        if (m_data->header->magic != 0x34474B50) {
+            printf("[*] file magic is not valid. magic was 0x%08x\n", m_data->header->magic);
             throw std::runtime_error(name + " is not a PKG4 NX file");
+        }
         //m_data->node_table = reinterpret_cast<node::data const *>(reinterpret_cast<char const *>(m_data->base) + m_data->header->node_offset);
 
         // seek to offset where nodes live
+        //printf("[*] node: seek node offset\n");
         ::fseek(m_data->file_handle, m_data->header->node_offset, SEEK_SET);
 
+        //printf("[*] node: get node struct size\n");
         size_t node_size = sizeof(node::data);
         // allocate memory for nodes
+        //printf("[*] node table creation\n");
         m_data->node_table = (node::data*) (malloc(node_size * m_data->header->node_count));
 
         //node::data nodes[m_data->header->node_count];
@@ -126,15 +136,21 @@ namespace nl {
         ::fseek(m_data->file_handle, m_data->header->string_offset, SEEK_SET);
 
         // allocate memory for nodes
+        //printf("[*] string table creation\n");
         m_data->string_table = (uint64_t*) (malloc(sizeof(uint64_t*) * m_data->header->string_count));
 
-        // read in node data
+        // read in node table data
         ::fread((uint64_t*)m_data->string_table, sizeof(uint64_t*), m_data->header->string_count, m_data->file_handle);
 
-        // read in bitmap data
+        // read in bitmap table data
         m_data->bitmap_table = (uint64_t*) (malloc(sizeof(uint64_t*) * m_data->header->bitmap_count));
         ::fseek(m_data->file_handle, m_data->header->bitmap_offset, SEEK_SET);
         ::fread((uint64_t*)m_data->bitmap_table, sizeof(uint64_t*), m_data->header->bitmap_count, m_data->file_handle);
+
+        // read in audio table data
+        m_data->audio_table = (uint64_t*) (malloc(sizeof(uint64_t*) * m_data->header->audio_count));
+        ::fseek(m_data->file_handle, m_data->header->audio_offset, SEEK_SET);
+        ::fread((uint64_t*)m_data->audio_table, sizeof(uint64_t*), m_data->header->audio_count, m_data->file_handle);
 
         //memcpy(nodes, m_data->string_table, sizeof(m_data->string_table));
         /*
