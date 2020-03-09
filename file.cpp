@@ -117,29 +117,22 @@ namespace nl {
         // seek to offset where nodes live
         //printf("[*] node: seek node offset\n");
         ::fseek(m_data->file_handle, m_data->header->node_offset, SEEK_SET);
-
-        //printf("[*] node: get node struct size\n");
         size_t node_size = sizeof(node::data);
         // allocate memory for nodes
         //printf("[*] node table creation\n");
         m_data->node_table = (node::data*) (malloc(node_size * m_data->header->node_count));
-
         //node::data nodes[m_data->header->node_count];
-
         // read in node data
         ::fread((void*)m_data->node_table, sizeof(node::data), m_data->header->node_count, m_data->file_handle);
 
         //nodes = m_data->node_table;
 
         /* load string table */
-        // seek to offset where nodes live
+        // seek to offset where strings live
         ::fseek(m_data->file_handle, m_data->header->string_offset, SEEK_SET);
-
-        // allocate memory for nodes
-        //printf("[*] string table creation\n");
+        // allocate memory for strings
         m_data->string_table = (uint64_t*) (malloc(sizeof(uint64_t*) * m_data->header->string_count));
-
-        // read in node table data
+        // read in string data
         ::fread((uint64_t*)m_data->string_table, sizeof(uint64_t*), m_data->header->string_count, m_data->file_handle);
 
         // read in bitmap table data
@@ -151,14 +144,6 @@ namespace nl {
         m_data->audio_table = (uint64_t*) (malloc(sizeof(uint64_t*) * m_data->header->audio_count));
         ::fseek(m_data->file_handle, m_data->header->audio_offset, SEEK_SET);
         ::fread((uint64_t*)m_data->audio_table, sizeof(uint64_t*), m_data->header->audio_count, m_data->file_handle);
-
-        //memcpy(nodes, m_data->string_table, sizeof(m_data->string_table));
-        /*
-        m_data->node_table = reinterpret_cast<node::data const *>(reinterpret_cast<char const *>(m_data->base) + m_data->header->node_offset);
-        m_data->string_table = reinterpret_cast<uint64_t const *>(reinterpret_cast<char const *>(m_data->base) + m_data->header->string_offset);
-        m_data->bitmap_table = reinterpret_cast<uint64_t const *>(reinterpret_cast<char const *>(m_data->base) + m_data->header->bitmap_offset);
-        m_data->audio_table = reinterpret_cast<uint64_t const *>(reinterpret_cast<char const *>(m_data->base) + m_data->header->audio_offset);
-        */
     }
     void file::close() {
         if (!m_data) return;
