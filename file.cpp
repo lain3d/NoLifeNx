@@ -105,32 +105,33 @@ namespace nl {
 
         // seek to offset where nodes live
         ::fseek(m_data->file_handle, m_data->header->node_offset, SEEK_SET);
-
         size_t node_size = sizeof(node::data);
         // allocate memory for nodes
         m_data->node_table = (node::data*) (malloc(node_size * m_data->header->node_count));
-
         //node::data nodes[m_data->header->node_count];
-
         // read in node data
         ::fread((void*)m_data->node_table, sizeof(node::data), m_data->header->node_count, m_data->file_handle);
 
         //nodes = m_data->node_table;
 
         /* load string table */
-        // seek to offset where nodes live
+        // seek to offset where strings live
         ::fseek(m_data->file_handle, m_data->header->string_offset, SEEK_SET);
-
-        // allocate memory for nodes
+        // allocate memory for strings
         m_data->string_table = (uint64_t*) (malloc(sizeof(uint64_t*) * m_data->header->string_count));
-
-        // read in node data
+        // read in string data
         ::fread((uint64_t*)m_data->string_table, sizeof(uint64_t*), m_data->header->string_count, m_data->file_handle);
 
         // read in bitmap data
         m_data->bitmap_table = (uint64_t*) (malloc(sizeof(uint64_t*) * m_data->header->bitmap_count));
         ::fseek(m_data->file_handle, m_data->header->bitmap_offset, SEEK_SET);
         ::fread((uint64_t*)m_data->bitmap_table, sizeof(uint64_t*), m_data->header->bitmap_count, m_data->file_handle);
+
+        // read in audio data
+        //m_data->audio_table = reinterpret_cast<uint64_t const *>(reinterpret_cast<char const *>(m_data->base) + m_data->header->audio_offset);
+        m_data->audio_table = (uint64_t*) (malloc(sizeof(uint64_t*) * m_data->header->audio_count));
+        ::fseek(m_data->file_handle, m_data->header->audio_offset, SEEK_SET);
+        ::fread((uint64_t*)m_data->audio_table, sizeof(uint64_t*), m_data->header->audio_count, m_data->file_handle);
 
         //memcpy(nodes, m_data->string_table, sizeof(m_data->string_table));
         /*
