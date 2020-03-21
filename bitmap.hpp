@@ -20,6 +20,7 @@
 #include "nxfwd.hpp"
 #include <cstdint>
 #include <cstddef>
+#include <unordered_map>
 
 namespace nl {
     class bitmap {
@@ -42,6 +43,7 @@ namespace nl {
         uint32_t length() const;
         //Returns a unique id, useful for keeping track of what bitmaps you loaded
         size_t id() const;
+        static std::unordered_map<std::size_t,const char*> bitmap_cache;
     private:
         bitmap(void const *, uint16_t, uint16_t);
         void const * m_data = nullptr;

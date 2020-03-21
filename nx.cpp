@@ -32,7 +32,7 @@ namespace nl
 
         bool exists(std::string name)
         {
-            return std::ifstream(name).is_open();
+            return std::ifstream("HeavenClient/"+name).is_open();
         }
 
         node add_file(std::string name)
@@ -65,10 +65,11 @@ namespace nl
                 item = add_file("Item.nx");
                 printf("[*] init map.nx\n");
                 map = add_file("Map.nx");
-                printf("[*] init mappretty.nx\n");
+                /*printf("[*] init mappretty.nx\n");
                 mapPretty = add_file("MapPretty.nx");
                 printf("[*] init maplatest.nx\n");
                 mapLatest = add_file("MapLatest.nx");
+                */
                 printf("[*] init map001.nx\n");
                 map001 = add_file("Map001.nx");
                 printf("[*] init mob.nx\n");

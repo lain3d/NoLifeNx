@@ -240,12 +240,18 @@ namespace nl {
         if (!m_data)
             return {};
 
+        uint64_t idx = ((uint64_t) m_file->file_handle << 32) | m_data->name;
+        if(string_cache.find(idx) != string_cache.end()) {
+            //printf("hit string cache %d\n", m_data->name);
+            return {string_cache[idx] + 2, *reinterpret_cast<uint16_t const *>(string_cache[idx])};
+        }
+
         auto const s = m_file->string_table[m_data->name];
         ::fseek(m_file->file_handle, s, SEEK_SET);
         char* buffer = (char*) malloc(100);
         ::fread(buffer, 100, 1, m_file->file_handle);
         //fscanf(m_file->file_handle, "%s", buffer);
-
+        string_cache[idx] = buffer;
         return {buffer + 2, *reinterpret_cast<uint16_t const *>(buffer)};
     }
     size_t node::size() const {
@@ -350,6 +356,11 @@ namespace nl {
         return {m_data->vector[0], m_data->vector[1]};
     }
     bitmap node::to_bitmap() const {
+        uint64_t idx = ((uint64_t) m_file->file_handle << 32) | m_data->bitmap.index;
+        if(bitmap_cache.find(idx) != bitmap_cache.end()) {
+            //printf("hit bitmap_cache %d\n", m_data->bitmap.index);
+            return {reinterpret_cast<const char*>(bitmap_cache[idx]), m_data->bitmap.width, m_data->bitmap.height};
+        }
         size_t bm_size = (4u * m_data->bitmap.width * m_data->bitmap.height);
         //size_t bm_size = sizeof(nl::bitmap);
         char* bm = (char*) malloc(bm_size);
@@ -359,12 +370,8 @@ namespace nl {
         //printf("reading index %d\n", m_data->bitmap.index);
         ::fread(bm, 1, bm_size, m_file->file_handle);
         //printf("finish reading\n");
-
+        bitmap_cache[idx] = bm;
         return {reinterpret_cast<const char*>(bm), m_data->bitmap.width, m_data->bitmap.height};
-
-        /*return {reinterpret_cast<char const *>(m_file->base)
-            + m_file->header->bitmap_offset + m_data->bitmap.index,
-            m_data->bitmap.width, m_data->bitmap.height};*/
     }
     audio node::to_audio() const {
         size_t au_size = m_data->audio.length;
@@ -379,7 +386,6 @@ namespace nl {
             m_data->audio.length};*/
     }
     node node::root() const {
-        //return {reinterpret_cast<char const *>(m_file->base) + m_file->header->node_offset, m_file};
         return {m_file->node_table, m_file}; // this should be fine...
     }
     node node::resolve(std::string path) const {

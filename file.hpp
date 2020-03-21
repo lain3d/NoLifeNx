@@ -20,6 +20,7 @@
 #include "nxfwd.hpp"
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 
 namespace nl {
     struct _file_data;
@@ -65,6 +66,7 @@ namespace nl {
         uint32_t node_count() const;
         //Returns the string with a given id number
         std::string get_string(uint32_t) const;
+
     private:
         data * m_data = nullptr;
         friend node;

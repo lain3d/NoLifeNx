@@ -88,7 +88,8 @@ namespace nl {
 #else
         //m_data->file_handle = ::open(name.c_str(), O_RDONLY);
         printf("[*] opening file handle for %s\n", name.c_str());
-        m_data->file_handle = ::fopen(name.c_str(), "r");
+        std::string path = "HeavenClient/" + name;
+        m_data->file_handle = ::fopen(path.c_str(), "r");
         if (m_data->file_handle == NULL) {
             printf("[!] failed to open file.\n");
             throw std::runtime_error("Failed to open file " + name);

@@ -21,6 +21,8 @@
 #include "file.hpp"
 #include "node_impl.hpp"
 
+#include <unordered_map>
+
 namespace nl {
 #pragma pack(push, 1)
     struct file::header {
@@ -51,4 +53,6 @@ namespace nl {
         size_t size = 0;
 #endif
     };
+    static std::unordered_map<uint64_t,const char*> bitmap_cache;
+    static std::unordered_map<uint64_t,const char*> string_cache;
 }

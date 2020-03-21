@@ -41,6 +41,7 @@ namespace nl {
             bitmap_buf.resize(l + 0x20);
         int x = ::LZ4_decompress_fast(4 + reinterpret_cast<char const *>(m_data),
             bitmap_buf.data(), static_cast<int>(l));
+
         return bitmap_buf.data();
     }
     uint16_t bitmap::width() const {
