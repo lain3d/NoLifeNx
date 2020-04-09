@@ -19,4 +19,5 @@ node.hpp
 nxfwd.hpp
 nx.hpp
 DESTINATION include/nx)
-target_link_libraries(NoLifeNx ${PROJECT_SOURCE_DIR}/../lz4/lib/liblz4.a)
+include_directories(${PROJECT_SOURCE_DIR}/../../lz4/lib)
+target_link_libraries(NoLifeNx ${PROJECT_SOURCE_DIR}/../../lz4/lib/liblz4.a)
